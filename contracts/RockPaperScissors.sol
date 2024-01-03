@@ -5,7 +5,8 @@ contract RockPaperScissors {
     enum Move { Rock, Paper, Scissors }
 
     function play(Move playerMove) public view returns (string memory) {
-        uint computerMove = uint(keccak256(abi.encodePacked(block.timestamp, block.difficulty))) % 3;
+        // Updated to use block.prevrandao for randomness
+        uint computerMove = uint(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))) % 3;
         Move compMove = Move(computerMove);
 
         if(playerMove == compMove) {
