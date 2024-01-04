@@ -1,36 +1,47 @@
 document.addEventListener('DOMContentLoaded', (event) => {
-    // Connect to MetaMask
+    let web3;
+    let rockPaperScissorsContract;
+
     async function connectMetaMask() {
         if (typeof window.ethereum !== 'undefined') {
             try {
-                // Request account access
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
                 console.log("Connected to MetaMask");
+                initializeWeb3AndContract();
             } catch (error) {
-                console.error("User denied account access");
+                console.error("User denied account access:", error);
             }
         } else {
             console.error("MetaMask is not installed!");
         }
     }
 
+    function initializeWeb3AndContract() {
+        web3 = new Web3(window.ethereum);
+        rockPaperScissorsContract = new web3.eth.Contract(correctRockPaperScissorsABI, contractAddress);
+        console.log("Web3 and Contract Initialized");
+    }
+
     connectMetaMask();
 
-    // Event listeners for buttons
-    document.getElementById('rock').addEventListener('click', function() {
-        playGame("Rock");
-    });
+    document.getElementById('rock').addEventListener('click', () => playGame("Rock"));
+    document.getElementById('paper').addEventListener('click', () => playGame("Paper"));
+    document.getElementById('scissors').addEventListener('click', () => playGame("Scissors"));
 
-    document.getElementById('paper').addEventListener('click', function() {
-        playGame("Paper");
-    });
-
-    document.getElementById('scissors').addEventListener('click', function() {
-        playGame("Scissors");
-    });
-
-    // Global variables for contract (fill in with your actual data)
-    const contractABI = [
+    const correctRockPaperScissorsABI = [
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "result",
+              "type": "string"
+            }
+          ],
+          "name": "GameResult",
+          "type": "event"
+        },
         {
           "inputs": [
             {
@@ -47,42 +58,35 @@ document.addEventListener('DOMContentLoaded', (event) => {
               "type": "string"
             }
           ],
-          "stateMutability": "view",
-          "type": "function",
-          "constant": true
+          "stateMutability": "nonpayable",
+          "type": "function"
         }
-      ]; // Replace with your contract's ABI
-    const contractAddress = "0xCfb5E120827D186A6272cc6eA30daba0fD907932"; // Replace with your contract's address
-
-    // Initialize web3 and contract
-    let web3 = new Web3(window.ethereum);
-    let rockPaperScissorsContract = new web3.eth.Contract(contractABI, contractAddress);
+      ]; // Replace with the actual ABI of RockPaperScissors contract
+    const contractAddress = "0xc1FB05267a5Bc91B0d17C1A7101A24D09CdC553e"; // Replace with your contract's address
 
     function playGame(playerChoice) {
-        // Convert player choice to number as expected by the smart contract
+        console.log(`Attempting to play game with choice: ${playerChoice}`);
+        if (!web3 || !rockPaperScissorsContract) {
+            console.error("Web3 or contract not initialized");
+            document.getElementById('result').innerText = "MetaMask is not connected. Please refresh and connect.";
+            return;
+        }
+
         let move = { "Rock": 0, "Paper": 1, "Scissors": 2 }[playerChoice];
 
-        // Get the user's account
         web3.eth.getAccounts()
         .then(accounts => {
-            // Use the first account to play
             let playerAccount = accounts[0];
-            
-            // Interact with the contract
-            rockPaperScissorsContract.methods.play(move).send({from: playerAccount})
-            .then(result => {
-                console.log("Game played!", result);
-                // Update the frontend with the result here
-                document.getElementById('result').innerText = "Game played! Check console for result.";
-            })
-            .catch(err => {
-                console.error("Error playing the game:", err);
-                document.getElementById('result').innerText = "Error playing the game. Check console.";
-            });
+            console.log("Using account:", playerAccount);
+            return rockPaperScissorsContract.methods.play(move).send({from: playerAccount});
+        })
+        .then(receipt => {
+            console.log("Transaction receipt:", receipt);
+            document.getElementById('result').innerText = "Transaction complete! Check console for receipt.";
         })
         .catch(err => {
-            console.error("Error getting accounts:", err);
-            document.getElementById('result').innerText = "Error getting accounts. Check console.";
+            console.error("Error playing the game:", err);
+            document.getElementById('result').innerText = "Error playing the game. Check console.";
         });
     }
 });
