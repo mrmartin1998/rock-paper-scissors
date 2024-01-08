@@ -3,20 +3,26 @@ pragma solidity ^0.8.0;
 
 contract RockPaperScissors {
     enum Move { Rock, Paper, Scissors }
+    
+    // Event to emit the result of the game.
+    event GameResult(string result);
 
-    function play(Move playerMove) public view returns (string memory) {
-        // Updated to use block.prevrandao for randomness
-        uint computerMove = uint(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))) % 3;
+    function play(Move playerMove) public returns (string memory) {
+        uint computerMove = uint(keccak256(abi.encodePacked(block.timestamp))) % 3;
         Move compMove = Move(computerMove);
+        string memory outcome;
 
         if(playerMove == compMove) {
-            return "It's a draw!";
+            outcome = "It's a draw!";
         } else if ((playerMove == Move.Rock && compMove == Move.Scissors) || 
                    (playerMove == Move.Scissors && compMove == Move.Paper) || 
                    (playerMove == Move.Paper && compMove == Move.Rock)) {
-            return "Player wins!";
+            outcome = "Player wins!";
         } else {
-            return "Computer wins!";
+            outcome = "Computer wins!";
         }
+        
+        emit GameResult(outcome); // Emitting the event with the game result
+        return outcome;
     }
 }
